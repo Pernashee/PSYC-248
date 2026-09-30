@@ -404,11 +404,12 @@
     let mean = 0;
     for (let b = 0; b < NBINS; b++) mean += weights[b] * (b + 0.5);
     mean /= total;
-    let ss = 0, s3 = 0;
+    let ss = 0, s3 = 0, s4 = 0;
     for (let b = 0; b < NBINS; b++) {
       const d = (b + 0.5) - mean, h = weights[b];
       ss += h * (d * d + 1 / 12);      // Var = d² + Var(U), U uniform on [−½, ½]
       s3 += h * (d * d * d + d / 4);   // 3·E[U²]·d = d/4
+      s4 += h * (d * d * d * d + d * d / 2 + 1 / 80); // 6·E[U²]·d² = d²/2, E[U⁴] = 1/80
     }
     const sd = Math.sqrt(ss / total);
     // median: first bin where cumulative weight reaches half the total
@@ -421,9 +422,10 @@
         break;
       }
     }
-    // skewness of the population (moment-based)
+    // skewness & excess kurtosis of the population (moment-based)
     const skew = sd > 0 ? (s3 / total) / (sd * sd * sd) : NaN;
-    return { total, mean, sd, median, skew };
+    const kurt = sd > 0 ? (s4 / total) / (sd * sd * sd * sd) - 3 : NaN;
+    return { total, mean, sd, median, skew, kurt };
   };
 
   /* Draw n values from the population. Values are uniform within each bin. */
@@ -457,7 +459,11 @@
     let median;
     if (n % 2 === 1) median = sorted[(n - 1) / 2];
     else median = (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
-    return { n, mean, median, sdN, varN, varUnb, mad: mad / n, range: sorted[n - 1] - sorted[0] };
+    let s3 = 0, s4 = 0;
+    for (let i = 0; i < n; i++) { const d = vals[i] - mean; s3 += d * d * d; s4 += d * d * d * d; }
+    const skew = sdN > 0 ? (s3 / n) / (sdN * sdN * sdN) : NaN;
+    const kurt = sdN > 0 ? (s4 / n) / (sdN * sdN * sdN * sdN) - 3 : NaN; // excess kurtosis
+    return { n, mean, median, sdN, varN, varUnb, mad: mad / n, range: sorted[n - 1] - sorted[0], skew, kurt };
   };
 
   /* Which per-sample value goes into the sampling distribution. */
@@ -491,7 +497,7 @@
     let s3 = 0, s4 = 0;
     for (let i = 0; i < n; i++) { const d = vals[i] - mean; s3 += d * d * d; s4 += d * d * d * d; }
     const skew = sd > 0 ? (s3 / n) / (sd * sd * sd) : NaN;
-    const kurt = sd > 0 ? (s4 / n) / (sd * sd * sd * sd) : NaN;
+    const kurt = sd > 0 ? (s4 / n) / (sd * sd * sd * sd) - 3 : NaN; // excess kurtosis
     return { n, mean, sd, median, skew, kurt };
   };
 
@@ -540,6 +546,7 @@
     mean: 'mean', median: 'median', varN: 'variance (N)', varUnb: 'variance (N−1)',
     sdN: 'SD (N)', range: 'range', mad: 'mean abs. dev.',
   };
+  const KURT_TITLE = 'Excess kurtosis: 0 ≈ normal; >0 = heavy tails; <0 = light tails';
 
   /* ------------------------------ theme ------------------------------ */
   function applyTheme(dark) {
@@ -699,12 +706,13 @@
     el.popStats.innerHTML = pill('mean', 'Mean μ', fmt(ps.mean, 2), 'mean') +
       pill('median', 'Median', fmt(ps.median, 2), 'median') +
       pill('sd', 'SD σ', fmt(ps.sd, 2), 'sd') +
-      pill('skew', 'Skew', fmt(ps.skew, 2), '');
+      pill('skew', 'Skew', fmt(ps.skew, 2), '') +
+      pill('kurt', 'Kurtosis', fmt(ps.kurt, 2), '', KURT_TITLE);
     return ps;
   }
 
-  function pill(cls, label, val, dotCls) {
-    return `<span class="stat-pill ${cls}"><span class="dot" style="background:var(--${dotCls || cls || 'blue'})"></span>${label}<b>${val}</b></span>`;
+  function pill(cls, label, val, dotCls, title) {
+    return `<span class="stat-pill ${cls}"${title ? ` title="${title}"` : ''}><span class="dot" style="background:var(--${dotCls || cls || 'blue'})"></span>${label}<b>${val}</b></span>`;
   }
 
   function redrawSample() {
@@ -734,7 +742,9 @@
       pill('mean', 'Mean', fmt(s.mean, 2), 'mean') +
       pill('median', 'Median', fmt(s.median, 2), 'median') +
       pill('sd', 'SD (÷N)', fmt(s.sdN, 2), 'sd') +
-      pill('var', 'Var (unb.)', fmt(s.varUnb, 2), 'green');
+      pill('var', 'Var (unb.)', fmt(s.varUnb, 2), 'green') +
+      pill('skew', 'Skew', fmt(s.skew, 2), '') +
+      pill('kurt', 'Kurtosis', fmt(s.kurt, 2), '', KURT_TITLE);
   }
 
   function redrawSampDist(pop) {
@@ -775,8 +785,10 @@
       items.push(pill('green', 'SE = σ⁄√N', fmt(se, 3), 'green'));
       items.push(pill('orange', 'Theory vs obs.', `${fmt(se, 2)} vs ${fmt(stats.sd, 2)}`, 'orange'));
       items.push(pill('skew', 'Skew', fmt(stats.skew, 2), ''));
+      items.push(pill('kurt', 'Kurtosis', fmt(stats.kurt, 2), '', KURT_TITLE));
     } else {
       items.push(pill('skew', 'Skew', fmt(stats.skew, 2), ''));
+      items.push(pill('kurt', 'Kurtosis', fmt(stats.kurt, 2), '', KURT_TITLE));
     }
     el.sdStats.innerHTML = items.join('');
   }

@@ -110,6 +110,7 @@ try {
   assert('core exposed as window.SampCore', await cdp.eval('typeof window.SampCore === "object"'));
   assert('three canvases present', await cdp.eval('document.querySelectorAll("canvas.hist").length === 3'));
   assert('population stats show Mean μ', (await cdp.eval('document.getElementById("popStatsRow").textContent')).includes('Mean'));
+  assert('population stats show Kurtosis', (await cdp.eval('document.getElementById("popStatsRow").textContent')).includes('Kurtosis'));
   assert('reps start at 0', (await cdp.eval('document.getElementById("repsChip").textContent')).includes('0'));
   await shot('01-initial');
 

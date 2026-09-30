@@ -30,7 +30,7 @@ distribution** tangible:
 | **Statistic** | Mean, median, variance (÷N), variance (÷N−1), SD (÷N), range, mean absolute deviation |
 | **Sampling** | Animated one-sample-at-a-time mode + batch buttons (+1 … +10,000) |
 | **Fit normal** | Overlays the theoretical normal (dashed orange, **σ/√N**) and the observed normal (green) on the sampling distribution |
-| **Live stats** | Mean (blue), median (purple), ±1 SD (red) drawn on every chart; skewness shown for the sampling distribution |
+| **Live stats** | Mean (blue), median (purple), ±1 SD (red) drawn on every chart; **skewness & excess kurtosis** shown for the population, the sample, and the sampling distribution (hover the pills for a reminder) |
 | **Guides** | In-app "Learning Guide" with the theory and suggested activities |
 | **Theme** | Light / dark mode, remembered across visits; fully responsive (works on phones) |
 

@@ -88,6 +88,27 @@ console.log('Core exports:', Object.keys(Core).join(', '));
   assert('sampleStats: varUnb = 2.5', approx(s.varUnb, 2.5, 1e-9), `got ${s.varUnb}`);
   assert('sampleStats: range = 4', s.range === 4);
   assert('sampleStats: mad = 1.2', approx(s.mad, 1.2, 1e-9), `got ${s.mad}`);
+  assert('sampleStats: skew = 0', approx(s.skew, 0, 1e-9), `got ${s.skew}`);
+  assert('sampleStats: excess kurtosis = −1.3 (flat sample)', approx(s.kurt, -1.3, 1e-9), `got ${s.kurt}`);
+}
+
+/* ---------- Kurtosis ---------- */
+{
+  const psU = Core.popStats(Core.weightsFor('uniform', null));
+  assert('uniform: excess kurtosis = −6/5 = −1.2 (exact)', approx(psU.kurt, -1.2, 1e-6), `got ${psU.kurt}`);
+  const psN = Core.popStats(Core.weightsFor('normal', null));
+  assert('normal: excess kurtosis ≈ 0', approx(psN.kurt, 0, 0.1), `got ${psN.kurt}`);
+  const psS = Core.popStats(Core.weightsFor('skewed', null));
+  assert('skewed: excess kurtosis > 0 (heavy tail)', psS.kurt > 0, `got ${psS.kurt}`);
+}
+{
+  // CLT: sampling distribution of the mean of a normal population is normal
+  const reps = 50000, N = 16;
+  const w = Core.weightsFor('normal', null);
+  const means = new Array(reps);
+  for (let i = 0; i < reps; i++) means[i] = Core.statisticOf('mean', Core.sampleStats(Core.drawSample(w, N, rng)));
+  const sd = Core.sampDistStats(means);
+  assert('CLT: sampling dist. excess kurtosis ≈ 0 (normal pop, N=16)', approx(sd.kurt, 0, 0.08), `got ${sd.kurt}`);
 }
 
 /* ---------- Central Limit Theorem: mean of means, SE = σ/√N ---------- */
