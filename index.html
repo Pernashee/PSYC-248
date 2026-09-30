@@ -343,6 +343,7 @@
 
 <footer>
   Built for PSYC 248 · Inspired by the <a href="https://onlinestatbook.com/stat_sim/sampling_dist/index.html" target="_blank" rel="noopener">Sampling Distributions simulation</a> (Rice Virtual Lab in Statistics, David Lane — public domain). Original reimplementation, no external dependencies.
+  <br><span id="verStamp" class="note">v</span>
 </footer>
 
 <script>
@@ -921,6 +922,9 @@
 
   /* initial render */
   renderAll();
+
+  /* version stamp (helps confirm you're seeing the latest build) */
+  $('verStamp').textContent = 'v1.2 · updated ' + new Date().toISOString().slice(0, 10) + ' · (hard-refresh Ctrl+Shift+R if stats are missing)';
 })();
 </script>
 </body>
