@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sampling Distribution Explorer · PSYC 248</title>
+<meta name="description" content="Interactive simulation of sampling distributions and the Central Limit Theorem for PSYC 248. Explore how the distribution of a statistic (e.g. the mean) behaves as sample size and number of samples change.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<style>
+  :root{
+    --bg:#f5f6fa; --surface:#ffffff; --surface2:#eef0f6; --surface3:#fafbfe;
+    --text:#1c2333; --muted:#5b6478; --faint:#8a92a6;
+    --line:#dde1ec; --line2:#e7eaf3;
+    --accent:#4f46e5; --accent-ink:#fff;
+    --blue:#2563eb; --purple:#9333ea; --red:#dc2626; --green:#059669; --orange:#ea580c;
+    --blue-bg:#eff4ff; --purple-bg:#f5efff; --red-bg:#fef0f0;
+    --shadow:0 1px 2px rgba(16,24,40,.06),0 6px 16px rgba(16,24,40,.08);
+    --radius:14px;
+    --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  [data-theme="dark"]{
+    --bg:#0f1117; --surface:#171b26; --surface2:#1f2534; --surface3:#141821;
+    --text:#e8ebf4; --muted:#9aa3b8; --faint:#6b748c;
+    --line:#2a3145; --line2:#232a3c;
+    --accent:#818cf8; --accent-ink:#0f1117;
+    --blue:#60a5fa; --purple:#c084fc; --red:#f87171; --green:#34d399; --orange:#fb923c;
+    --blue-bg:rgba(96,165,250,.12); --purple-bg:rgba(192,132,252,.12); --red-bg:rgba(248,113,113,.12);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 20px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:var(--font);line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .hidden{display:none!important}
+  button{font-family:inherit;cursor:pointer}
+  select, input{font-family:inherit;color:inherit}
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    padding:14px 20px;background:var(--surface);border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:20;
+  }
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .brand-mark{
+    width:44px;height:44px;border-radius:12px;flex:none;
+    background:linear-gradient(135deg,var(--accent),var(--purple));
+    color:#fff;font-size:22px;display:grid;place-items:center;
+    box-shadow:var(--shadow);
+  }
+  .brand h1{font-size:18px;margin:0;letter-spacing:-.01em}
+  .brand .sub{font-size:12.5px;color:var(--muted);margin:0}
+  .header-actions{display:flex;gap:8px;align-items:center}
+  .icon-btn{
+    border:1px solid var(--line);background:var(--surface);color:var(--text);
+    border-radius:10px;padding:8px 12px;font-size:14px;
+  }
+  .icon-btn:hover{background:var(--surface2)}
+
+  /* ---------- Layout ---------- */
+  .layout{
+    display:grid;grid-template-columns:310px 1fr;gap:18px;
+    max-width:1240px;margin:18px auto;padding:0 18px;
+  }
+  .sidebar{display:flex;flex-direction:column;gap:14px;align-self:start;position:sticky;top:76px}
+  @media (max-width:960px){
+    .layout{grid-template-columns:1fr}
+    .sidebar{position:static}
+  }
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 12px}
+  .field{margin-bottom:14px}
+  .field:last-child{margin-bottom:0}
+  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+  .field .lbl-row{display:flex;justify-content:space-between;align-items:baseline}
+  .field .lbl-row b{color:var(--accent);font-family:var(--mono)}
+
+  /* segmented control */
+  .seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;background:var(--surface2);padding:4px;border-radius:10px;border:1px solid var(--line)}
+  .seg button{
+    border:0;background:transparent;color:var(--muted);font-size:12.5px;font-weight:600;
+    padding:7px 2px;border-radius:7px;
+  }
+  .seg button:hover{color:var(--text)}
+  .seg button.active{background:var(--accent);color:var(--accent-ink);box-shadow:var(--shadow)}
+  @media (max-width:1120px) and (min-width:961px){ .seg{grid-template-columns:repeat(3,1fr)} }
+
+  .hint{font-size:12px;color:var(--muted);margin:8px 0 0;display:none}
+  .hint.show{display:block}
+
+  input[type=range]{
+    width:100%;accent-color:var(--accent);height:26px;margin:4px 0 2px;
+  }
+  select{
+    width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:9px;
+    background:var(--surface3);font-size:13.5px;
+  }
+  .btnrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  button.btn{
+    border:1px solid var(--line);background:var(--surface3);color:var(--text);
+    border-radius:9px;padding:8px 10px;font-size:13px;font-weight:600;flex:1 1 auto;
+  }
+  button.btn:hover{background:var(--surface2)}
+  button.btn:active{transform:translateY(1px)}
+  button.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+  button.btn.primary:hover{filter:brightness(1.05)}
+  button.btn.warn{color:var(--red);border-color:var(--red)}
+  button.btn:disabled{opacity:.45;cursor:not-allowed}
+  .spd{flex:0 0 auto;width:96px}
+
+  .check{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--text);cursor:pointer;margin-top:12px}
+  .check input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+  .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+
+  /* ---------- Visualization panels ---------- */
+  .viz{display:flex;flex-direction:column;gap:18px;min-width:0}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .panel-head{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    padding:12px 16px;border-bottom:1px solid var(--line2);
+  }
+  .panel-head h2{font-size:14px;margin:0;letter-spacing:-.01em}
+  .chip{
+    font-size:11.5px;color:var(--muted);background:var(--surface2);
+    border:1px solid var(--line);padding:3px 8px;border-radius:999px;font-family:var(--mono);
+  }
+  canvas.hist{display:block;width:100%;height:210px}
+  #canvasSampDist{height:300px}
+  .canvas-wrap{position:relative;padding:6px 6px 2px}
+  .stats-row{
+    display:flex;gap:8px;flex-wrap:wrap;padding:8px 14px 12px;font-size:12.5px;color:var(--muted);
+    border-top:1px solid var(--line2);
+  }
+  .stat-pill{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:3px 8px;white-space:nowrap}
+  .stat-pill b{font-family:var(--mono);font-weight:700;color:var(--text);margin-left:4px}
+  .stat-pill .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:baseline;background:var(--muted)}
+  .stat-pill.sd .dot{background:var(--red)}
+  .stat-pill.mean .dot{background:var(--blue)}
+  .stat-pill.median .dot{background:var(--purple)}
+  .stat-pill.green .dot{background:var(--green)}
+  .stat-pill.orange .dot{background:var(--orange)}
+
+  /* theory / equation panel */
+  .theory{padding:16px 18px}
+  .theory h2{font-size:14px;margin:0 0 8px}
+  .eq{
+    font-family:var(--mono);font-size:15px;background:var(--surface2);
+    border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 12px;
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  }
+  .eq .eqfrac{display:inline-flex;flex-direction:column;text-align:center;vertical-align:middle;line-height:1.15}
+  .eq .eqfrac .top{border-bottom:1.5px solid var(--text);padding:0 6px}
+  .theory p{font-size:13.5px;color:var(--muted);margin:8px 0}
+  .theory ul{margin:6px 0;padding-left:20px}
+  .theory li{font-size:13.5px;color:var(--muted);margin:4px 0}
+  .theory .note{font-size:12px;color:var(--faint)}
+
+  /* guide modal */
+  .guide{
+    position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;
+    background:rgba(10,14,25,.55);backdrop-filter:blur(3px);
+  }
+  .guide-box{
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    max-width:760px;max-height:86vh;overflow:auto;padding:24px 26px;box-shadow:var(--shadow);
+  }
+  .guide-box h2{margin:0 0 10px;font-size:18px}
+  .guide-box h3{font-size:14px;margin:16px 0 6px}
+  .guide-box p, .guide-box li{font-size:13.5px;color:var(--muted)}
+  .guide-box ul{padding-left:20px}
+  .guide-close{float:right;border:1px solid var(--line);background:var(--surface2);border-radius:9px;padding:6px 12px;font-size:13px}
+
+  footer{
+    max-width:1240px;margin:0 auto 26px;padding:0 18px;
+    font-size:12px;color:var(--faint);text-align:center;
+  }
+  footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">📊</div>
+    <div>
+      <h1>Sampling Distribution Explorer</h1>
+      <p class="sub">PSYC 248 · The Central Limit Theorem &amp; sampling distributions</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="icon-btn" id="guideBtn" type="button">Learning Guide</button>
+    <button class="icon-btn" id="themeBtn" type="button" title="Toggle dark/light theme" aria-label="Toggle theme">🌙</button>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- ============ Sidebar: controls ============ -->
+  <aside class="sidebar">
+    <section class="card" aria-label="Population controls">
+      <h2>Population</h2>
+      <div class="seg" role="group" aria-label="Population distribution shape" id="popShapeSeg">
+        <button type="button" data-shape="normal" class="active">Normal</button>
+        <button type="button" data-shape="uniform">Uniform</button>
+        <button type="button" data-shape="skewed">Skewed</button>
+        <button type="button" data-shape="bimodal">Bimodal</button>
+        <button type="button" data-shape="custom">Custom</button>
+      </div>
+      <p class="hint" id="customHint">✋ Drag on the population chart to draw its shape. Press <b>Reset</b> to restore a flat (uniform) shape.</p>
+    </section>
+
+    <section class="card" aria-label="Sampling controls">
+      <h2>Sampling</h2>
+      <div class="field">
+        <div class="lbl-row"><label for="nSlider">Sample size</label><b id="nLabel">N = 5</b></div>
+        <input type="range" id="nSlider" min="1" max="64" value="5" aria-label="Sample size">
+        <p class="hint" id="nHint">Size of each sample. A larger N narrows the sampling distribution.</p>
+      </div>
+      <div class="field">
+        <label for="statSelect">Statistic to track</label>
+        <select id="statSelect">
+          <option value="mean" selected>Mean</option>
+          <option value="median">Median</option>
+          <option value="varN">Variance (divisor N)</option>
+          <option value="varUnb">Variance (unbiased, N − 1)</option>
+          <option value="sdN">Standard deviation (divisor N)</option>
+          <option value="range">Range (max − min)</option>
+          <option value="mad">Mean absolute deviation</option>
+        </select>
+      </div>
+      <div class="btnrow">
+        <button class="btn primary" id="btnAnimate" type="button">▶ Animate</button>
+        <select id="speedSelect" class="spd" aria-label="Animation speed" title="Animation speed">
+          <option value="1">1 / tick</option>
+          <option value="5">5 / tick</option>
+          <option value="20" selected>20 / tick</option>
+          <option value="100">100 / tick</option>
+          <option value="500">500 / tick</option>
+        </select>
+      </div>
+      <div class="btnrow">
+        <button class="btn" data-batch="1" type="button">+1</button>
+        <button class="btn" data-batch="10" type="button">+10</button>
+        <button class="btn" data-batch="100" type="button">+100</button>
+        <button class="btn" data-batch="1000" type="button">+1,000</button>
+        <button class="btn" data-batch="10000" type="button">+10,000</button>
+      </div>
+      <div class="btnrow">
+        <button class="btn warn" id="btnReset" type="button">↺ Reset samples</button>
+      </div>
+      <label class="check"><input type="checkbox" id="fitNormal" checked> Overlay normal curve on sampling distribution</label>
+      <label class="check"><input type="checkbox" id="showStats" checked> Show mean · median · ±1 SD guides</label>
+    </section>
+
+    <section class="card" aria-label="Quick legend">
+      <h2>Marker colors</h2>
+      <div class="legend" style="flex-direction:column;gap:8px">
+        <span><i style="background:var(--blue)"></i>Mean</span>
+        <span><i style="background:var(--purple)"></i>Median</span>
+        <span><i style="background:var(--red)"></i>Mean ± 1 SD</span>
+        <span><i style="background:var(--green)"></i>Observed (empirical) sampling dist.</span>
+        <span><i style="background:var(--orange)"></i>Theoretical normal (σ / √N)</span>
+      </div>
+    </section>
+  </aside>
+
+  <!-- ============ Main visualization ============ -->
+  <section class="viz">
+    <div class="panel" id="panelPop">
+      <div class="panel-head">
+        <h2>① Population</h2>
+        <span class="chip">source of all samples</span>
+      </div>
+      <div class="canvas-wrap"><canvas class="hist" id="canvasPop" aria-label="Population distribution histogram"></canvas></div>
+      <div class="stats-row" id="popStatsRow" aria-live="polite"></div>
+    </div>
+
+    <div class="panel" id="panelSample">
+      <div class="panel-head">
+        <h2>② Most recent sample</h2>
+        <span class="chip" id="sampleChip">no sample yet</span>
+      </div>
+      <div class="canvas-wrap"><canvas class="hist" id="canvasSample" aria-label="Histogram of the most recent sample"></canvas></div>
+      <div class="stats-row" id="sampleStatsRow" aria-live="polite"></div>
+    </div>
+
+    <div class="panel" id="panelSampDist">
+      <div class="panel-head">
+        <h2 id="sampDistTitle">③ Sampling distribution of the <span id="statName">mean</span></h2>
+        <span class="chip" id="repsChip">replications: 0</span>
+      </div>
+      <div class="canvas-wrap"><canvas class="hist" id="canvasSampDist" aria-label="Sampling distribution histogram"></canvas></div>
+      <div class="stats-row" id="sampDistStatsRow" aria-live="polite"></div>
+    </div>
+
+    <div class="panel">
+      <div class="theory">
+        <h2>What should you see?</h2>
+        <div class="eq" id="eqLine">SE = σ ⁄ √N</div>
+        <p id="theoryBody"></p>
+        <p class="note">Tip: keep drawing samples — the sampling distribution is only an <em>estimate</em> until the number of replications is large.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ Learning guide ============ -->
+<div class="guide hidden" id="guide" role="dialog" aria-modal="true" aria-label="Learning guide">
+  <div class="guide-box">
+    <button class="guide-close" id="guideClose" type="button">✕ Close</button>
+    <h2>Sampling Distributions in 90 seconds</h2>
+    <p>This simulation is a modern reimplementation of the classic <strong>Sampling Distributions</strong> applet from Rice University's Virtual Lab in Statistics (David Lane, public domain).</p>
+    <h3>The big idea</h3>
+    <p>A <strong>sampling distribution</strong> is the distribution of a statistic — like the sample mean — computed from many, many random samples of the same size <em>N</em> taken from the same population. It is a theoretical distribution that describes how the statistic varies from sample to sample.</p>
+    <h3>Three distributions, don't mix them up</h3>
+    <ul>
+      <li><strong>① Population:</strong> every score that could exist (top chart). Its mean is <strong>μ</strong>, its SD is <strong>σ</strong>.</li>
+      <li><strong>② Sample:</strong> one particular set of <em>N</em> scores drawn from the population (middle chart). Its mean is the statistic <strong>M</strong>.</li>
+      <li><strong>③ Sampling distribution:</strong> the histogram of that statistic across thousands of samples (bottom chart).</li>
+    </ul>
+    <h3>The Central Limit Theorem (what this proves)</h3>
+    <ul>
+      <li>The sampling distribution of the <strong>mean</strong> becomes approximately <strong>normal</strong> as <em>N</em> grows — <em>even if the population is skewed or bimodal</em>.</li>
+      <li>Its mean equals the population mean: <strong>mean of M ≈ μ</strong>.</li>
+      <li>Its standard deviation (the <strong>standard error</strong>) shrinks as N grows: <strong>SE = σ ⁄ √N</strong>.</li>
+      <li>So with a larger sample size, sample means cluster more tightly around μ — bigger samples give more precise estimates.</li>
+    </ul>
+    <h3>Things to try</h3>
+    <ul>
+      <li>Start with <strong>Uniform</strong> or <strong>Skewed</strong> populations, set N = 2, then draw 10,000 samples. Note the shape.</li>
+      <li>Raise N to 30+ and watch the sampling distribution become bell-shaped (the CLT in action).</li>
+      <li>Compare <strong>observed SD</strong> of the means to the <strong>theoretical σ ⁄ √N</strong> — they converge as replications grow.</li>
+      <li>Pick a skewed population and track the <strong>mean</strong>, then switch to <strong>median</strong> or <strong>variance</strong> to see how each statistic has its own sampling distribution.</li>
+      <li>Draw a <strong>custom</strong> population by dragging on the top chart.</li>
+    </ul>
+    <p class="note">Note: The bottom chart is based on a finite number of samples, so it approximates the true sampling distribution. Statistics are computed with divisor <em>N</em> (matching the original applet); the unbiased variance option uses <em>N − 1</em>.</p>
+  </div>
+</div>
+
+<footer>
+  Built for PSYC 248 · Inspired by the <a href="https://onlinestatbook.com/stat_sim/sampling_dist/index.html" target="_blank" rel="noopener">Sampling Distributions simulation</a> (Rice Virtual Lab in Statistics, David Lane — public domain). Original reimplementation, no external dependencies.
+</footer>
+
+<script>
+/* ============================================================================
+   CORE MATH  (pure functions, no DOM — kept separate so it can be unit-tested)
+   ==========================================================================*/
+(function () {
+  const NBINS = 32;          // population is 32 bins spanning [0, 32]
+  const MAXV = 32;
+  const Core = { NBINS, MAXV };
+
+  function normPdf(x, mu, sigma) {
+    const s2 = 2 * sigma * sigma;
+    return Math.exp(-((x - mu) * (x - mu)) / s2) / (sigma * Math.sqrt(2 * Math.PI));
+  }
+
+  /* Weight (relative frequency) of each population bin, for a given shape.
+     'custom' reads an array of 32 non-negative heights. */
+  Core.weightsFor = function (shape, custom) {
+    const w = new Array(NBINS);
+    for (let b = 0; b < NBINS; b++) {
+      const c = b + 0.5; // bin centre
+      let h = 1;
+      switch (shape) {
+        case 'normal':
+          h = Math.exp(-((c - 16) * (c - 16)) / 32); // N(16, σ=4) → σ²=16
+          break;
+        case 'uniform':
+          h = 1;
+          break;
+        case 'skewed': {
+          // log-normal-ish density, right-skewed, peak near x≈4
+          const m = 1.25, s = 0.8;
+          if (c <= 0.02) { h = 0; break; }
+          const lx = Math.log(c);
+          h = Math.exp(-((lx - m) * (lx - m)) / (2 * s * s)) / (c * s * Math.sqrt(2 * Math.PI));
+          break;
+        }
+        case 'bimodal':
+          h = 0.5 * normPdf(c, 7, 2) + 0.5 * normPdf(c, 25, 2);
+          break;
+        case 'custom':
+          h = custom ? custom[b] : 1;
+          break;
+      }
+      w[b] = (Number.isFinite(h) && h > 0) ? h : 0;
+    }
+    return w;
+  };
+
+  /* Population descriptors from the bin weights.
+     Values are uniform within each bin, so we add the exact within-bin
+     continuous moments (var 1/12, E[U³]=0, E[U⁴]=1/80) to the bin-centre
+     sums. This makes, e.g., the uniform population's SD exactly 32/√12
+     (the textbook value for a uniform distribution on [0, 32]). */
+  Core.popStats = function (weights) {
+    let total = 0;
+    for (let b = 0; b < NBINS; b++) total += weights[b];
+    let mean = 0;
+    for (let b = 0; b < NBINS; b++) mean += weights[b] * (b + 0.5);
+    mean /= total;
+    let ss = 0, s3 = 0;
+    for (let b = 0; b < NBINS; b++) {
+      const d = (b + 0.5) - mean, h = weights[b];
+      ss += h * (d * d + 1 / 12);      // Var = d² + Var(U), U uniform on [−½, ½]
+      s3 += h * (d * d * d + d / 4);   // 3·E[U²]·d = d/4
+    }
+    const sd = Math.sqrt(ss / total);
+    // median: first bin where cumulative weight reaches half the total
+    let cum = 0, median = NaN, half = total / 2;
+    for (let b = 0; b < NBINS; b++) {
+      const prev = cum; cum += weights[b];
+      if (cum >= half) {
+        const frac = weights[b] > 0 ? (half - prev) / weights[b] : 0;
+        median = b + Math.min(1, Math.max(0, frac));
+        break;
+      }
+    }
+    // skewness of the population (moment-based)
+    const skew = sd > 0 ? (s3 / total) / (sd * sd * sd) : NaN;
+    return { total, mean, sd, median, skew };
+  };
+
+  /* Draw n values from the population. Values are uniform within each bin. */
+  Core.drawSample = function (weights, n, rng) {
+    rng = rng || Math.random;
+    const cum = new Array(NBINS);
+    let t = 0;
+    for (let b = 0; b < NBINS; b++) { t += weights[b]; cum[b] = t; }
+    const vals = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const r = rng() * t;
+      let lo = 0, hi = NBINS - 1;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (cum[mid] < r) lo = mid + 1; else hi = mid; }
+      vals[i] = lo + rng();
+    }
+    return vals;
+  };
+
+  /* Descriptors of a single sample. */
+  Core.sampleStats = function (vals) {
+    const n = vals.length;
+    let sum = 0;
+    for (let i = 0; i < n; i++) sum += vals[i];
+    const mean = sum / n;
+    let ss = 0, mad = 0;
+    for (let i = 0; i < n; i++) { const d = vals[i] - mean; ss += d * d; mad += Math.abs(d); }
+    const varN = ss / n;
+    const sdN = Math.sqrt(varN);
+    const varUnb = n > 1 ? ss / (n - 1) : NaN;
+    const sorted = Array.prototype.slice.call(vals).sort((a, b) => a - b);
+    let median;
+    if (n % 2 === 1) median = sorted[(n - 1) / 2];
+    else median = (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
+    return { n, mean, median, sdN, varN, varUnb, mad: mad / n, range: sorted[n - 1] - sorted[0] };
+  };
+
+  /* Which per-sample value goes into the sampling distribution. */
+  Core.statisticOf = function (stat, s) {
+    switch (stat) {
+      case 'mean': return s.mean;
+      case 'median': return s.median;
+      case 'varN': return s.varN;
+      case 'varUnb': return s.varUnb;
+      case 'sdN': return s.sdN;
+      case 'range': return s.range;
+      case 'mad': return s.mad;
+      default: return s.mean;
+    }
+  };
+
+  /* Descriptors of the sampling distribution (the accumulated statistics). */
+  Core.sampDistStats = function (vals) {
+    const n = vals.length;
+    if (n === 0) return null;
+    let sum = 0;
+    for (let i = 0; i < n; i++) sum += vals[i];
+    const mean = sum / n;
+    let ss = 0;
+    for (let i = 0; i < n; i++) { const d = vals[i] - mean; ss += d * d; }
+    const sd = Math.sqrt(ss / n);
+    const sorted = Array.prototype.slice.call(vals).sort((a, b) => a - b);
+    let median;
+    if (n % 2 === 1) median = sorted[(n - 1) / 2];
+    else median = (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
+    let s3 = 0, s4 = 0;
+    for (let i = 0; i < n; i++) { const d = vals[i] - mean; s3 += d * d * d; s4 += d * d * d * d; }
+    const skew = sd > 0 ? (s3 / n) / (sd * sd * sd) : NaN;
+    const kurt = sd > 0 ? (s4 / n) / (sd * sd * sd * sd) : NaN;
+    return { n, mean, sd, median, skew, kurt };
+  };
+
+  if (typeof window !== 'undefined') window.SampCore = Core;
+  else globalThis.SampCore = Core;
+})();
+</script>
+
+<script>
+/* ============================================================================
+   UI / RENDERING  (DOM + canvas)
+   ==========================================================================*/
+(function () {
+  const Core = window.SampCore;
+  const $ = (id) => document.getElementById(id);
+  const isNum = (x) => Number.isFinite(x);
+  const fmt = (x, d) => (isNum(x) ? x.toFixed(d) : '—');
+
+  /* ------------------------------ state ------------------------------ */
+  const state = {
+    popShape: 'normal',
+    custom: new Array(Core.NBINS).fill(1),
+    N: 5,
+    stat: 'mean',
+    fitNormal: true,
+    showStats: true,
+    animating: false,
+    animTimer: null,
+    sample: [],            // current (most recent) sample values
+    vals: [],              // accumulated statistic values (the sampling distribution)
+  };
+
+  /* ------------------------------ elements ------------------------------ */
+  const el = {
+    popCanvas: $('canvasPop'), sampleCanvas: $('canvasSample'), sdCanvas: $('canvasSampDist'),
+    popStats: $('popStatsRow'), sampleStats: $('sampleStatsRow'), sdStats: $('sampDistStatsRow'),
+    sampleChip: $('sampleChip'), repsChip: $('repsChip'), statName: $('statName'),
+    sampDistTitle: $('sampDistTitle'), eq: $('eqLine'), theory: $('theoryBody'),
+    nLabel: $('nLabel'), nSlider: $('nSlider'), statSelect: $('statSelect'),
+    fitNormal: $('fitNormal'), showStats: $('showStats'), customHint: $('customHint'),
+    guide: $('guide'), guideBtn: $('guideBtn'), guideClose: $('guideClose'), themeBtn: $('themeBtn'),
+    resetBtn: $('btnReset'), animateBtn: $('btnAnimate'), speedSelect: $('speedSelect'),
+  };
+
+  const STAT_NAMES = {
+    mean: 'mean', median: 'median', varN: 'variance (N)', varUnb: 'variance (N−1)',
+    sdN: 'SD (N)', range: 'range', mad: 'mean abs. dev.',
+  };
+
+  /* ------------------------------ theme ------------------------------ */
+  function applyTheme(dark) {
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    el.themeBtn.textContent = dark ? '☀️' : '🌙';
+    try { localStorage.setItem('sampdist-theme', dark ? 'dark' : 'light'); } catch (e) {}
+  }
+  try {
+    const saved = localStorage.getItem('sampdist-theme');
+    applyTheme(saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
+  } catch (e) { applyTheme(false); }
+
+  /* ------------------------------ canvas helpers ------------------------------ */
+  function prepCanvas(canvas) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.max(1, rect.width), h = Math.max(1, rect.height);
+    const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+    if (canvas.width !== pw || canvas.height !== ph) { canvas.width = pw; canvas.height = ph; }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    return { ctx, w, h };
+  }
+
+  const PAD = { top: 16, right: 10, bottom: 22, left: 10 };
+
+  function drawHist(canvas, counts, opts) {
+    const { ctx, w, h } = prepCanvas(canvas);
+    const o = opts || {};
+    const range = o.range || [0, Core.MAXV];
+    const binW = o.binW || (range[1] - range[0]) / counts.length;
+    const plotW = w - PAD.left - PAD.right;
+    const plotH = h - PAD.top - PAD.bottom;
+    const css = getComputedStyle(document.documentElement);
+    const cText = css.getPropertyValue('--text').trim();
+    const cMuted = css.getPropertyValue('--muted').trim();
+    const cLine = css.getPropertyValue('--line').trim();
+    const cBlue = css.getPropertyValue('--blue').trim();
+    const cPurple = css.getPropertyValue('--purple').trim();
+    const cRed = css.getPropertyValue('--red').trim();
+    const cGreen = css.getPropertyValue('--green').trim();
+    const cOrange = css.getPropertyValue('--orange').trim();
+    const base = css.getPropertyValue('--surface').trim();
+
+    const x = (v) => PAD.left + ((v - range[0]) / (range[1] - range[0])) * plotW;
+    const y = (cnt) => h - PAD.bottom - (cnt / o.maxCount) * plotH;
+
+    // max count: data max or overlay-curve peaks, so nothing clips
+    let maxC = 0;
+    for (let i = 0; i < counts.length; i++) if (counts[i] > maxC) maxC = counts[i];
+    const totalArea = (o.totalArea != null) ? o.totalArea : counts.reduce((a, b) => a + b, 0) * binW;
+    if (o.normals) {
+      for (const n of o.normals) {
+        if (isNum(n.sd) && n.sd > 0) maxC = Math.max(maxC, totalArea * (1 / (n.sd * Math.sqrt(2 * Math.PI))));
+      }
+    }
+    if (!(maxC > 0)) maxC = 1;
+    o.maxCount = maxC;
+
+    // gridlines + baseline
+    ctx.strokeStyle = cLine; ctx.lineWidth = 1;
+    const nTicks = 4;
+    for (let i = 0; i <= nTicks; i++) {
+      const yy = h - PAD.bottom - (i / nTicks) * plotH;
+      ctx.beginPath(); ctx.moveTo(PAD.left, yy); ctx.lineTo(w - PAD.right, yy); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.moveTo(PAD.left, h - PAD.bottom); ctx.lineTo(w - PAD.right, h - PAD.bottom); ctx.stroke();
+
+    // bars
+    const barW = (binW / (range[1] - range[0])) * plotW;
+    for (let i = 0; i < counts.length; i++) {
+      const bx = x(range[0] + i * binW);
+      const bh = (h - PAD.bottom) - y(counts[i]);
+      ctx.fillStyle = o.fill || 'rgba(79,70,229,0.28)';
+      ctx.fillRect(bx + 0.5, y(counts[i]), Math.max(1, barW - 1), bh);
+    }
+
+    // axis labels
+    ctx.fillStyle = cMuted; ctx.font = '11px ' + getComputedStyle(document.body).fontFamily;
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
+    if (o.xLabels) { ctx.fillText(String(o.xLabels[0]), PAD.left, h - PAD.bottom + 4); ctx.textAlign = 'right'; ctx.fillText(String(o.xLabels[1]), w - PAD.right, h - PAD.bottom + 4); }
+    if (o.yLabel && isNum(o.maxCount)) {
+      ctx.save(); ctx.textAlign = 'left'; ctx.fillText(String(o.yLabel) + (o.maxCount >= 1000 ? 'k' : ''), PAD.left + 2, PAD.top);
+      ctx.restore();
+    }
+
+    // mean / median / ±1SD guides
+    if (o.showStats !== false) {
+      if (isNum(o.mean) && isNum(o.sd) && o.sd > 0) {
+        ctx.fillStyle = 'rgba(220,38,38,0.10)';
+        const x1 = Math.max(PAD.left, x(o.mean - o.sd)), x2 = Math.min(w - PAD.right, x(o.mean + o.sd));
+        ctx.fillRect(x1, PAD.top, x2 - x1, plotH);
+      }
+      if (isNum(o.mean)) {
+        ctx.strokeStyle = cBlue; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x(o.mean), PAD.top); ctx.lineTo(x(o.mean), h - PAD.bottom); ctx.stroke();
+      }
+      if (isNum(o.median)) {
+        ctx.strokeStyle = cPurple; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x(o.median), PAD.top); ctx.lineTo(x(o.median), h - PAD.bottom); ctx.stroke();
+      }
+    }
+
+    // normal curve overlays
+    if (o.normals) {
+      for (const n of o.normals) {
+        if (!isNum(n.sd) || n.sd <= 0) continue;
+        ctx.strokeStyle = n.color || cOrange;
+        ctx.lineWidth = n.dashed ? 2 : 2.5;
+        ctx.setLineDash(n.dashed ? [6, 4] : []);
+        ctx.beginPath();
+        const step = 1;
+        for (let px = PAD.left; px <= w - PAD.right; px += step) {
+          const v = range[0] + ((px - PAD.left) / plotW) * (range[1] - range[0]);
+          const f = totalArea * (1 / (n.sd * Math.sqrt(2 * Math.PI))) * Math.exp(-((v - n.mean) * (v - n.mean)) / (2 * n.sd * n.sd));
+          const yy = y(f);
+          if (px === PAD.left) ctx.moveTo(px, yy); else ctx.lineTo(px, yy);
+        }
+        ctx.stroke(); ctx.setLineDash([]);
+      }
+    }
+
+    return { x, y, plotW, plotH };
+  }
+
+  function binHistogram(vals, binCount, lo, hi) {
+    if (vals.length === 0) return { counts: new Array(binCount).fill(0), binW: 0 };
+    let mn = lo, mx = hi;
+    if (lo == null || hi == null) { mn = Infinity; mx = -Infinity; for (const v of vals) { if (v < mn) mn = v; if (v > mx) mx = v; } }
+    let span = mx - mn;
+    if (!(span > 0)) { span = 1; mn -= 0.5; mx += 0.5; }
+    const binW = span / binCount;
+    const counts = new Array(binCount).fill(0);
+    for (const v of vals) {
+      let idx = Math.floor((v - mn) / binW);
+      if (idx < 0) idx = 0; else if (idx >= binCount) idx = binCount - 1;
+      counts[idx]++;
+    }
+    return { counts, binW, mn, mx };
+  }
+
+  /* ------------------------------ data plumbing ------------------------------ */
+  function popWeights() { return Core.weightsFor(state.popShape, state.custom); }
+
+  function redrawPopulation() {
+    const weights = popWeights();
+    const ps = Core.popStats(weights);
+    drawHist(el.popCanvas, weights, {
+      range: [0, Core.MAXV], binW: 1,
+      fill: 'rgba(79,70,229,0.22)',
+      mean: ps.mean, median: ps.median, sd: ps.sd,
+      showStats: state.showStats,
+      xLabels: ['0', '32'], yLabel: 'freq',
+    });
+    el.popStats.innerHTML = pill('mean', 'Mean μ', fmt(ps.mean, 2), 'mean') +
+      pill('median', 'Median', fmt(ps.median, 2), 'median') +
+      pill('sd', 'SD σ', fmt(ps.sd, 2), 'sd') +
+      pill('skew', 'Skew', fmt(ps.skew, 2), '');
+    return ps;
+  }
+
+  function pill(cls, label, val, dotCls) {
+    return `<span class="stat-pill ${cls}"><span class="dot" style="background:var(--${dotCls || cls || 'blue'})"></span>${label}<b>${val}</b></span>`;
+  }
+
+  function redrawSample() {
+    const s = state.sample.length ? Core.sampleStats(state.sample) : null;
+    if (!s) {
+      drawHist(el.sampleCanvas, new Array(Core.NBINS).fill(0), { range: [0, Core.MAXV], binW: 1, xLabels: ['0', '32'], maxCount: 1 });
+      el.sampleStats.innerHTML = '<span class="stat-pill">Draw a sample to get started</span>';
+      el.sampleChip.textContent = 'no sample yet';
+      return;
+    }
+    const counts = new Array(Core.NBINS).fill(0);
+    for (const v of state.sample) {
+      let b = Math.floor(v);
+      if (b < 0) b = 0; else if (b > Core.NBINS - 1) b = Core.NBINS - 1;
+      counts[b]++;
+    }
+    drawHist(el.sampleCanvas, counts, {
+      range: [0, Core.MAXV], binW: 1,
+      fill: 'rgba(5,150,105,0.22)',
+      mean: s.mean, median: s.median, sd: s.sdN,
+      showStats: state.showStats, maxCount: Math.max(1, state.N),
+      xLabels: ['0', '32'], yLabel: 'count',
+    });
+    el.sampleChip.textContent = `${STAT_NAMES[state.stat]} = ${fmt(Core.statisticOf(state.stat, s), 3)}`;
+    el.sampleStats.innerHTML =
+      pill('n', 'n', s.n, 'blue') +
+      pill('mean', 'Mean', fmt(s.mean, 2), 'mean') +
+      pill('median', 'Median', fmt(s.median, 2), 'median') +
+      pill('sd', 'SD (÷N)', fmt(s.sdN, 2), 'sd') +
+      pill('var', 'Var (unb.)', fmt(s.varUnb, 2), 'green');
+  }
+
+  function redrawSampDist(pop) {
+    const n = state.vals.length;
+    const stats = Core.sampDistStats(state.vals);
+    el.repsChip.textContent = `replications: ${n.toLocaleString()}`;
+    el.statName.textContent = STAT_NAMES[state.stat];
+    if (!stats) {
+      drawHist(el.sdCanvas, new Array(40).fill(0), { range: [0, Core.MAXV], binW: 0.8, maxCount: 1, xLabels: ['', ''], yLabel: 'freq' });
+      el.sdStats.innerHTML = '<span class="stat-pill">Collect samples to form the sampling distribution</span>';
+      return;
+    }
+    const h = binHistogram(state.vals, 48);
+    const normals = [];
+    if (state.fitNormal) {
+      if (state.stat === 'mean') {
+        const theorySd = pop.sd / Math.sqrt(state.N);
+        normals.push({ mean: pop.mean, sd: theorySd, color: 'var(--orange)', dashed: true });
+        normals.push({ mean: stats.mean, sd: stats.sd, color: 'var(--green)' });
+      } else {
+        normals.push({ mean: stats.mean, sd: stats.sd, color: 'var(--green)' });
+      }
+    }
+    drawHist(el.sdCanvas, h.counts, {
+      range: [h.mn, h.mx], binW: h.binW,
+      fill: 'rgba(5,150,105,0.20)',
+      mean: stats.mean, median: stats.median, sd: stats.sd,
+      showStats: state.showStats,
+      normals, xLabels: [fmt(h.mn, 1), fmt(h.mx, 1)], yLabel: 'freq',
+    });
+    const items = [
+      pill('mean', 'Mean of ' + STAT_NAMES[state.stat], fmt(stats.mean, 3), 'mean'),
+      pill('median', 'Median', fmt(stats.median, 3), 'median'),
+      pill('sd', 'Observed SD', fmt(stats.sd, 3), 'sd'),
+    ];
+    if (state.stat === 'mean') {
+      const se = pop.sd / Math.sqrt(state.N);
+      items.push(pill('green', 'SE = σ⁄√N', fmt(se, 3), 'green'));
+      items.push(pill('orange', 'Theory vs obs.', `${fmt(se, 2)} vs ${fmt(stats.sd, 2)}`, 'orange'));
+      items.push(pill('skew', 'Skew', fmt(stats.skew, 2), ''));
+    } else {
+      items.push(pill('skew', 'Skew', fmt(stats.skew, 2), ''));
+    }
+    el.sdStats.innerHTML = items.join('');
+  }
+
+  function drawSamples(k, pop) {
+    const weights = popWeights();
+    for (let i = 0; i < k; i++) {
+      state.sample = Core.drawSample(weights, state.N);
+      const s = Core.sampleStats(state.sample);
+      state.vals.push(Core.statisticOf(state.stat, s));
+    }
+    renderAll(pop);
+  }
+
+  function renderAll(pop) {
+    pop = pop || redrawPopulation();
+    redrawSample();
+    redrawSampDist(pop);
+    updateTheory(pop);
+  }
+
+  function updateTheory(pop) {
+    if (state.stat === 'mean') {
+      const se = pop.sd / Math.sqrt(state.N);
+      el.eq.innerHTML = `SE = σ ⁄ √N = ${fmt(pop.sd, 2)} ⁄ √${state.N} = <b>${fmt(se, 3)}</b>`;
+      const stats = Core.sampDistStats(state.vals);
+      const obs = stats && stats.n > 1 ? ` The observed SD of the means is <b>${fmt(stats.sd, 3)}</b>.` : ' Draw more samples to see the observed SD converge to the theoretical value.';
+      el.theory.innerHTML =
+        `For the <strong>mean</strong>, the CLT says the sampling distribution approaches a normal curve as N grows: its centre is the population mean <b>${fmt(pop.mean, 2)}</b> and its spread is the standard error above.<br>` +
+        `Even with a ${state.popShape === 'normal' ? 'normal' : 'non-normal (' + state.popShape + ')'} population, larger N makes the distribution of means more bell-shaped and narrower.` + obs;
+    } else {
+      el.eq.innerHTML = 'Sampling distribution of the <b>' + STAT_NAMES[state.stat] + '</b> (no simple formula — watch its shape)';
+      const stats = Core.sampDistStats(state.vals);
+      const obs = stats && stats.n > 1 ? ` So far its centre is <b>${fmt(stats.mean, 3)}</b> with SD <b>${fmt(stats.sd, 3)}</b>.` : '';
+      el.theory.innerHTML = 'Every statistic has its own sampling distribution. Some are unbiased (their centre matches the population parameter); the sample variance (÷N) is <em>biased</em>, which is why we usually divide by N − 1.' + obs;
+    }
+  }
+
+  /* ------------------------------ actions ------------------------------ */
+  function resetSamples() {
+    state.vals = [];
+    state.sample = [];
+    stopAnimation();
+    renderAll();
+  }
+
+  function setPopulation(shape) {
+    state.popShape = shape;
+    document.querySelectorAll('#popShapeSeg button').forEach((b) => b.classList.toggle('active', b.dataset.shape === shape));
+    el.customHint.classList.toggle('show', shape === 'custom');
+    if (shape === 'custom') el.popCanvas.style.cursor = 'crosshair';
+    else el.popCanvas.style.cursor = '';
+    resetSamples();
+  }
+
+  function startAnimation() {
+    if (state.animating) return;
+    state.animating = true;
+    el.animateBtn.textContent = '⏸ Pause';
+    const speed = parseInt(el.speedSelect.value, 10);
+    state.animTimer = setInterval(() => drawSamples(speed), 90);
+  }
+  function stopAnimation() {
+    state.animating = false;
+    el.animateBtn.textContent = '▶ Animate';
+    if (state.animTimer) { clearInterval(state.animTimer); state.animTimer = null; }
+  }
+
+  /* ------------------------------ events ------------------------------ */
+  document.querySelectorAll('#popShapeSeg button').forEach((b) => b.addEventListener('click', () => setPopulation(b.dataset.shape)));
+
+  el.nSlider.addEventListener('input', () => { state.N = parseInt(el.nSlider.value, 10); el.nLabel.textContent = 'N = ' + state.N; });
+  el.nSlider.addEventListener('change', () => { resetSamples(); });
+  el.statSelect.addEventListener('change', () => { state.stat = el.statSelect.value; resetSamples(); });
+  el.fitNormal.addEventListener('change', () => { state.fitNormal = el.fitNormal.checked; renderAll(); });
+  el.showStats.addEventListener('change', () => { state.showStats = el.showStats.checked; renderAll(); });
+
+  document.querySelectorAll('[data-batch]').forEach((b) => b.addEventListener('click', () => drawSamples(parseInt(b.dataset.batch, 10))));
+  el.resetBtn.addEventListener('click', resetSamples);
+  el.animateBtn.addEventListener('click', () => (state.animating ? stopAnimation() : startAnimation()));
+  el.speedSelect.addEventListener('change', () => { if (state.animating) { stopAnimation(); startAnimation(); } });
+
+  el.guideBtn.addEventListener('click', () => el.guide.classList.remove('hidden'));
+  el.guideClose.addEventListener('click', () => el.guide.classList.add('hidden'));
+  el.guide.addEventListener('click', (e) => { if (e.target === el.guide) el.guide.classList.add('hidden'); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') el.guide.classList.add('hidden'); });
+  el.themeBtn.addEventListener('click', () => applyTheme(document.documentElement.dataset.theme !== 'dark'));
+
+  /* custom population drawing */
+  let painting = false;
+  const pfx = () => {
+    const r = el.popCanvas.getBoundingClientRect();
+    const plotW = r.width - PAD.left - PAD.right;
+    const plotH = r.height - PAD.top - PAD.bottom;
+    return { r, plotW, plotH };
+  };
+  function paintFromEvent(e) {
+    if (state.popShape !== 'custom') return;
+    const { r, plotW, plotH } = pfx();
+    const px = e.clientX - r.left - PAD.left;
+    const py = e.clientY - r.top - PAD.top;
+    let bin = Math.floor((px / plotW) * Core.NBINS);
+    if (bin < 0 || bin > Core.NBINS - 1) return;
+    const rel = Math.max(0, Math.min(1, 1 - py / plotH)); // 0..1 within plot
+    const val = rel * 2.4;                                 // paint height up to 2.4
+    for (let d = -1; d <= 1; d++) { const b = bin + d; if (b >= 0 && b < Core.NBINS) state.custom[b] = val; }
+    // the population changed, so all previous samples are invalidated
+    resetSamples();
+  }
+  el.popCanvas.addEventListener('pointerdown', (e) => {
+    if (state.popShape !== 'custom') return;
+    painting = true;
+    el.popCanvas.setPointerCapture(e.pointerId);
+    paintFromEvent(e);
+  });
+  el.popCanvas.addEventListener('pointermove', (e) => { if (painting) paintFromEvent(e); });
+  el.popCanvas.addEventListener('pointerup', (e) => { painting = false; });
+  el.popCanvas.addEventListener('pointercancel', () => { painting = false; });
+
+  /* responsive redraws */
+  let ro;
+  if (typeof ResizeObserver !== 'undefined') {
+    ro = new ResizeObserver(() => {
+      const pop = redrawPopulation();
+      redrawSample();
+      redrawSampDist(pop);
+    });
+    [el.popCanvas, el.sampleCanvas, el.sdCanvas].forEach((c) => ro.observe(c));
+  }
+
+  /* initial render */
+  renderAll();
+})();
+</script>
+</body>
+</html>
